@@ -2,7 +2,7 @@ from customtkinter import CTk, CTkFrame, CTkLabel, CTkEntry, CTkButton, CTkProgr
 from tkinter import messagebox, filedialog
 from PIL import Image
 from io import BytesIO
-from pytube import YouTube
+from pytubefix import YouTube
 from threading import Thread
 from requests import get as send_request
 from re import sub
@@ -23,7 +23,6 @@ video_entry = CTkEntry(app, placeholder_text="URL del video", width=500)
 video_entry.grid(row=1, column=0, columnspan=3)
 
 def download(video, extension, button):
-
     button.configure(state="disabled", text="\nDescargando...\n", width=170)
     search_button.configure(state="disabled")
     extension_upper = extension.upper()
@@ -57,7 +56,7 @@ def showInfo():
     search_button.configure(state="disabled", text="Buscando...")
     download_mp4_button.configure(width=170, state="disabled")
     download_mp3_button.configure(width=170, state="disabled")
-    url = video_entry.get()
+    url = video_entry.get().strip()
 
     try:
         yt = YouTube(url, on_progress_callback=progress_func)
@@ -65,7 +64,9 @@ def showInfo():
         progress_download_label.configure(text="Progreso de la descarga: ")
         progress_bar.set(0)
         highest_resolution = yt.streams.get_highest_resolution()
-        audio = yt.streams.get_by_itag(251)
+        audio = yt.streams.get_audio_only()
+
+        print(yt.streams)
 
         image_video_label.configure(image=fetch_thumbnail(url))
         title_video_label.configure(text=f"Titulo del video: \n{yt.title}")
@@ -91,7 +92,7 @@ def showInfo():
         download_mp4_button.configure(width=170, state="normal")
         download_mp3_button.configure(width=170, state="normal")
 
-def progress_func(stream, chunk, bytes_remaining):
+def progress_func(stream, _, bytes_remaining):
     progress = (1 - bytes_remaining / stream.filesize)
     progress_download_label.configure(text=f"Progreso de la descarga: {progress * 100:.0f}%")
     progress_bar.set(progress)
@@ -99,7 +100,7 @@ def progress_func(stream, chunk, bytes_remaining):
 search_button = CTkButton(app, text="Buscar", command=lambda: Thread(target=showInfo).start(), width=500)
 search_button.grid(row=2, column=0, columnspan=3, pady=10)
 
-video_entry.bind("<Return>", lambda event: Thread(target=showInfo).start())
+video_entry.bind("<Return>", lambda _: Thread(target=showInfo).start())
 
 image_video_label = CTkLabel(app, image=CTkImage(Image.open('assets/empty_video.png'), size=(640, 360)), text="", width=640, height=360)
 image_video_label.grid(row=3, column=0, rowspan=7)
